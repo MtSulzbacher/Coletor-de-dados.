@@ -55,3 +55,4 @@ workbook.save('Ofertas do dia.xlsx')
 
 # Fecha o navegador
 driver.quit()
+
