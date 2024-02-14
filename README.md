@@ -1,57 +1,57 @@
-Para criar um README adequado para o código que automatiza a coleta de dados de produtos da página de ofertas do dia do site Kabum e os salva em uma planilha do Excel, incluindo links diretos para os produtos, segue um exemplo de como poderia ser estruturado:
+# Importação das bibliotecas necessárias
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import openpyxl
 
----
+# Configuração do WebDriver para usar o Chrome
+driver = webdriver.Chrome()
+# Acessa a página de ofertas do dia do site Kabum
+driver.get('https://www.kabum.com.br/ofertas/ofertadodia?pagina=1')
 
-# Coletor de Ofertas Kabum
+# Extrai todos os títulos dos produtos usando XPATH
+titulos = driver.find_elements(By.XPATH, "//span[@class='sc-d79c9c3f-0 nlmfp sc-cdc9b13f-16 eHyEuD nameCard']")
 
-Este script em Python automatiza a coleta de dados das ofertas do dia no site da Kabum, incluindo nomes de produtos, preços originais, preços com desconto e a porcentagem de desconto. Além disso, ele adiciona um hyperlink na descrição de cada produto, direcionando para a página de compra correspondente.
+# Extrai todos os preços originais (De R$) dos produtos usando o XPATH fornecido
+precos_de = driver.find_elements(By.XPATH, "//span[@class='sc-620f2d27-1 bksuMM oldPriceCard']")
 
-## Funcionalidades
+# Extrai todos os preços promocionais (Por R$) dos produtos usando o XPATH fornecido
+precos_por = driver.find_elements(By.XPATH, "//span[@class='sc-620f2d27-2 bMHwXA priceCard']")
 
-- Extração de nomes, preços originais e preços com desconto dos produtos listados na página de ofertas do dia.
-- Cálculo da porcentagem de desconto para cada produto.
-- Criação de uma planilha do Excel para armazenar os dados coletados.
-- Inclusão de hyperlinks diretos para as páginas de compra dos produtos na descrição de cada um na planilha.
+# Extrai os URLs dos produtos
+urls = driver.find_elements(By.XPATH, "//a[contains(@class,'productLink')]")
 
-## Tecnologias Utilizadas
+# Cria uma nova planilha Excel e remove a aba padrão
+workbook = openpyxl.Workbook()
+sheet_default = workbook.active
+workbook.remove(sheet_default)
+# Adiciona uma nova aba chamada 'Produtos' e a seleciona para manipulação
+sheet_produtos = workbook.create_sheet('Produtos')
 
-- Python
-- Selenium WebDriver
-- OpenPyXL
+# Configura os títulos das colunas na primeira linha da planilha
+sheet_produtos['A1'].value = 'Produto'
+sheet_produtos['B1'].value = 'De R$'
+sheet_produtos['C1'].value = 'Por R$'
+sheet_produtos['D1'].value = 'Desconto'
 
-## Como Usar
+# Itera sobre os títulos, preços originais, preços promocionais dos produtos e URLs extraídos
+for titulo, preco_de, preco_por, url in zip(titulos, precos_de, precos_por, urls):
+    # Remove caracteres não numéricos para conversão em float dos preços
+    preco_de_num = float(preco_de.text.replace('R$', '').replace('.', '').replace(',', '.').strip())
+    preco_por_num = float(preco_por.text.replace('R$', '').replace('.', '').replace(',', '.').strip())
+    
+    # Calcula a porcentagem de desconto
+    desconto = ((preco_de_num - preco_por_num) / preco_de_num) * 100
+    
+    # Adiciona os dados na próxima linha disponível da planilha
+    row = [titulo.text, preco_de.text, preco_por.text, f'{desconto:.2f}%']
+    sheet_produtos.append(row)
+    # Define o hyperlink para o título do produto
+    cell = sheet_produtos.cell(row=sheet_produtos.max_row, column=1)
+    cell.hyperlink = url.get_attribute('href')
+    cell.style = 'Hyperlink'
 
-### Pré-Requisitos
+# Salva a planilha no disco com o nome 'Ofertas do dia.xlsx'
+workbook.save('Ofertas do dia.xlsx')
 
-- Python instalado em sua máquina.
-- Bibliotecas Selenium e OpenPyXL instaladas. Você pode instalá-las usando o pip:
-
-```bash
-pip install selenium openpyxl
-```
-
-- WebDriver do Chrome (ChromeDriver) compatível com a versão do seu navegador instalado.
-
-### Execução
-
-1. Clone ou baixe o script para o seu computador.
-2. Certifique-se de que o ChromeDriver esteja no PATH do seu sistema ou no mesmo diretório do script.
-3. Execute o script:
-
-```bash
-python coletor_ofertas_kabum.py
-```
-
-4. Após a execução, uma planilha chamada "Ofertas do dia.xlsx" será salva no mesmo diretório do script, contendo as informações coletadas.
-
-## Nota
-
-Este script foi desenvolvido para fins educacionais e de demonstração. A estrutura do site da Kabum pode mudar, o que pode requerer ajustes no script.
-
-## Licença
-
-Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
-
----
-
-Esse README fornece uma visão geral clara do propósito do script, como configurar o ambiente para rodá-lo, e como executá-lo. Lembre-se de ajustar qualquer parte do README conforme necessário para refletir qualquer particularidade ou pré-requisito específico do seu projeto ou ambiente.
+# Fecha o navegador
+driver.quit()
