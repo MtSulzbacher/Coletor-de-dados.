@@ -1,57 +1,28 @@
-# Importação das bibliotecas necessárias
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-import openpyxl
+Este código em Python utiliza as bibliotecas Selenium e OpenPyXL para automatizar a extração de dados de produtos e seus preços do site Kabum, especificamente da página de ofertas do dia, e posteriormente salvar esses dados em uma planilha do Excel.
 
-# Configuração do WebDriver para usar o Chrome
-driver = webdriver.Chrome()
-# Acessa a página de ofertas do dia do site Kabum
-driver.get('https://www.kabum.com.br/ofertas/ofertadodia?pagina=1')
+1. **Importação das Bibliotecas**:
+   - `from selenium import webdriver`: Importa o módulo `webdriver` da biblioteca Selenium, que é usado para automatizar a interação com navegadores da web.
+   - `from selenium.webdriver.common.by import By`: Importa a classe `By`, que é utilizada para localizar elementos dentro de uma página web através de diferentes métodos (como ID, XPATH, etc.).
+   - `import openpyxl`: Importa a biblioteca OpenPyXL, que permite a leitura e escrita de arquivos Excel (XLSX).
 
-# Extrai todos os títulos dos produtos usando XPATH
-titulos = driver.find_elements(By.XPATH, "//span[@class='sc-d79c9c3f-0 nlmfp sc-cdc9b13f-16 eHyEuD nameCard']")
+2. **Configuração do WebDriver**:
+   - `driver = webdriver.Chrome()`: Cria uma instância do Chrome WebDriver. Isso abrirá uma janela do navegador Chrome para automatizar a interação com páginas web.
+   - `driver.get('https://www.kabum.com.br/ofertas/ofertadodia?pagina=1')`: Navega até a página de ofertas do dia do site Kabum.
 
-# Extrai todos os preços originais (De R$) dos produtos usando o XPATH fornecido
-precos_de = driver.find_elements(By.XPATH, "//span[@class='sc-620f2d27-1 bksuMM oldPriceCard']")
+3. **Extração dos Dados**:
+   - **Títulos dos Produtos**: Utiliza o método `find_elements` com o parâmetro `By.XPATH` para localizar todos os elementos que correspondem ao XPATH fornecido e armazena-os na variável `titulos`. O XPATH especificado busca por `span` com classes específicas que contêm os nomes dos produtos.
+   - **Preços dos Produtos**: Similarmente, busca todos os elementos que contêm os preços dos produtos utilizando outro XPATH e armazena-os na variável `precos`.
 
-# Extrai todos os preços promocionais (Por R$) dos produtos usando o XPATH fornecido
-precos_por = driver.find_elements(By.XPATH, "//span[@class='sc-620f2d27-2 bMHwXA priceCard']")
+4. **Criação da Planilha Excel**:
+   - `workbook = openpyxl.Workbook()`: Cria um novo arquivo de workbook (planilha Excel).
+   - `workbook.create_sheet('Produtos')`: Adiciona uma nova aba chamada "Produtos" ao workbook.
+   - `sheet_produtos = workbook['Produtos']`: Seleciona a aba "Produtos" criada anteriormente para manipulação.
+   - Define os títulos das colunas "Produtos" e "Preços" nas células A1 e B1, respectivamente.
 
-# Extrai os URLs dos produtos
-urls = driver.find_elements(By.XPATH, "//a[contains(@class,'productLink')]")
+5. **Preenchimento da Planilha**:
+   - O laço `for` itera simultaneamente sobre as listas `titulos` e `precos` (usando a função `zip` para agrupá-las) e para cada par de título e preço, insere-os na próxima linha disponível da aba "Produtos". No entanto, parece haver um pequeno erro no laço `for`, onde a variável `precos` deveria ter um nome diferente para não sobrescrever a variável `precos` da lista de preços. Supondo que seja um erro de digitação, o correto seria usar `for titulo, preco in zip(titulos, precos):`.
 
-# Cria uma nova planilha Excel e remove a aba padrão
-workbook = openpyxl.Workbook()
-sheet_default = workbook.active
-workbook.remove(sheet_default)
-# Adiciona uma nova aba chamada 'Produtos' e a seleciona para manipulação
-sheet_produtos = workbook.create_sheet('Produtos')
+6. **Salvamento da Planilha**:
+   - `workbook.save('Ofertas do dia.xlsx')`: Salva o workbook no arquivo "Ofertas do dia.xlsx". Esse arquivo conterá uma aba "Produtos" com os produtos e preços extraídos da página.
 
-# Configura os títulos das colunas na primeira linha da planilha
-sheet_produtos['A1'].value = 'Produto'
-sheet_produtos['B1'].value = 'De R$'
-sheet_produtos['C1'].value = 'Por R$'
-sheet_produtos['D1'].value = 'Desconto'
-
-# Itera sobre os títulos, preços originais, preços promocionais dos produtos e URLs extraídos
-for titulo, preco_de, preco_por, url in zip(titulos, precos_de, precos_por, urls):
-    # Remove caracteres não numéricos para conversão em float dos preços
-    preco_de_num = float(preco_de.text.replace('R$', '').replace('.', '').replace(',', '.').strip())
-    preco_por_num = float(preco_por.text.replace('R$', '').replace('.', '').replace(',', '.').strip())
-    
-    # Calcula a porcentagem de desconto
-    desconto = ((preco_de_num - preco_por_num) / preco_de_num) * 100
-    
-    # Adiciona os dados na próxima linha disponível da planilha
-    row = [titulo.text, preco_de.text, preco_por.text, f'{desconto:.2f}%']
-    sheet_produtos.append(row)
-    # Define o hyperlink para o título do produto
-    cell = sheet_produtos.cell(row=sheet_produtos.max_row, column=1)
-    cell.hyperlink = url.get_attribute('href')
-    cell.style = 'Hyperlink'
-
-# Salva a planilha no disco com o nome 'Ofertas do dia.xlsx'
-workbook.save('Ofertas do dia.xlsx')
-
-# Fecha o navegador
-driver.quit()
+O código automatiza o processo de coleta de informações de produtos e preços de um site e armazena esses dados em uma planilha Excel, o que pode ser muito útil para análise de dados, monitoramento de preços, ou integração com outras ferramentas de gerenciamento de estoque ou e-commerce.
